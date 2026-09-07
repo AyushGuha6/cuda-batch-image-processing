@@ -1,0 +1,16 @@
+# Installation
+
+See [README.md](README.md) for build and run instructions.
+
+Quick start on the Coursera GPU environment:
+
+```bash
+make setup
+pip install -r requirements.txt
+make run
+python3 scripts/package_proof_artifacts.py --root .
+```
+
+Windows users: see [WINDOWS.md](WINDOWS.md).
+
+Repository: https://github.com/AyushGuha06/CudaCourse2026

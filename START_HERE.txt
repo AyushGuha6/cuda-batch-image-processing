@@ -1,0 +1,14 @@
+CUDA Batch Image Processor — Windows quick start
+================================================
+
+1. Install CUDA Toolkit and Python 3 (pip install pillow).
+2. Open x64 Native Tools Command Prompt for VS, or run build.bat (it sets up MSVC).
+3. From this folder:
+
+      build.bat
+      run.bat
+
+4. Upload cuda_proof_of_execution.zip to Coursera.
+
+See WINDOWS.md and README.md for details.
+Repository: https://github.com/AyushGuha06/CudaCourse2026
