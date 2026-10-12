@@ -1,132 +1,65 @@
-# CUDA Batch Image Processor
+# CUDA Batch Image Processing
 
-GPU batch processor for PNG images. Loads a directory of images on the host,
-runs custom CUDA kernels for optional horizontal blur and RGB-to-grayscale
-conversion, and writes processed files back to disk.
+> A GPU batch processor that applies custom CUDA kernels (blur and grayscale) to a folder of PNG images. Final project for Course 3 of a GPU Specialization course.
 
-Repository: https://github.com/AyushGuha06/CudaCourse2026
+## Overview
 
-## Layout
+The program loads a directory of images on the CPU, sends them to the GPU, runs custom CUDA kernels on every pixel, and writes the results back to disk. It shows how a simple image-processing step maps onto GPU threads, and how time splits between GPU kernel work and host input/output.
 
-```
-include/     Headers (cli_parser, image_processor, platform_compat)
-src/         main.cpp, cli_parser.cpp, image_processor.cu
-lib/         stb_image headers and Windows dirent shim
-scripts/     Setup, sample data, proof packaging
-bin/         Built executable (not committed)
-data/        Input/output images (generated locally)
-results/     Execution logs (generated locally)
-```
+## My contribution
 
-## Requirements
-
-- NVIDIA GPU and CUDA toolkit (`nvcc`)
-- Python 3 with Pillow (`pip install pillow`)
-- Linux: `curl`, `make`, `bash`
-- Windows: Visual Studio Build Tools, see [WINDOWS.md](WINDOWS.md)
-
-## Build
-
-Linux / Coursera GPU environment:
-
-```bash
-make setup
-make build
-```
-
-Windows (from project root, x64 Native Tools prompt or after `build.bat` sets up MSVC):
-
-```cmd
-build.bat
-```
-
-Manual compile:
-
-```bash
-nvcc -Iinclude -Ilib --std=c++17 -O2 \
-  -gencode arch=compute_61,code=sm_61 \
-  -gencode arch=compute_75,code=sm_75 \
-  -gencode arch=compute_86,code=sm_86 \
-  src/main.cpp src/cli_parser.cpp src/image_processor.cu \
-  -o bin/batch_image_processor.exe
-```
-
-## Generate test images
-
-Default dataset: **MNIST** handwritten digits (UCI / LeCun), exported as **colorized RGB**
-PNG files so the grayscale kernel has real color input to convert. The script downloads
-the training set once and writes 128 images scaled to 256×256:
-
-```bash
-python3 scripts/prepare_mnist_dataset.py --output data/input --count 128
-```
-
-Alternative synthetic images (no download):
-
-```bash
-python3 scripts/generate_sample_images.py --output data/input --count 128
-```
-
-You can also place your own `.png` or `.jpg` files in the input directory.
-
-## Run
-
-Full pipeline (build, generate data if needed, process, log output):
-
-```bash
-bash run.sh
-```
-
-Windows:
-
-```cmd
-run.bat
-```
-
-Manual run:
-
-```bash
-./bin/batch_image_processor.exe \
-  --input data/input \
-  --output data/output \
-  --log results/execution_log.txt \
-  --mode both \
-  --threads 256
-```
-
-### Command-line options
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--input <dir>` | Input image directory | `data/input` |
-| `--output <dir>` | Output directory | `data/output` |
-| `--log <file>` | Execution log path | `results/execution_log.txt` |
-| `--mode <name>` | `grayscale`, `blur`, or `both` | `both` |
-| `--threads <n>` | CUDA threads per block | `256` |
-| `--max-images <n>` | Max images to process (`-1` = all) | `-1` |
-| `--help` | Print usage | |
+I wrote the CUDA kernels, the C++ host code, the build scripts, and the supporting Python scripts.
 
 ## Kernels
 
-- `HorizontalBlurKernel` — 3-tap horizontal box blur on RGB, edges unchanged
-- `RgbToGrayscaleKernel` — ITU-R BT.601 luma weights (0.299R + 0.587G + 0.114B)
+| Kernel | What it does |
+|---|---|
+| `HorizontalBlurKernel` | 3-tap horizontal box blur on RGB channels. Edge pixels are left unchanged. |
+| `RgbToGrayscaleKernel` | Grayscale conversion using ITU-R BT.601 luma weights. |
 
-Host code handles directory iteration, CUDA memory, and timing. GPU kernel
-time and host I/O time are tracked separately in the execution log.
+The kernels are written directly in CUDA. This project does not use NVIDIA libraries such as NPP or cuFFT.
 
-## Proof-of-execution package
+## Tools
 
-After a GPU run:
+C++, CUDA, Python (Pillow), Make. Code follows the Google C++ Style Guide.
+
+## Input data
+
+By default, the program uses MNIST digits colorized into 256×256 RGB PNG images (128 images). It can also use a synthetic image generator or your own PNG or JPG files.
+
+## Run options
+
+| Option | Meaning |
+|---|---|
+| `--input` | Folder of input images |
+| `--output` | Folder for processed images |
+| `--log` | Path for the execution log |
+| `--mode` | `grayscale`, `blur`, or `both` |
+| `--threads` | CUDA threads per block (default 256) |
+| `--max-images` | Limit on images processed (default: all) |
+
+## Build and run
+
+Requires an NVIDIA GPU, the CUDA Toolkit, and Python 3 with Pillow.
 
 ```bash
-python3 scripts/package_proof_artifacts.py --root .
+# Linux
+make setup
+make build
+
+# Windows
+build.bat
 ```
 
-Creates `cuda_proof_of_execution.zip` with logs, console capture, and labeled
-before/after sample images for submission.
+See `START_HERE.txt` for the full walkthrough, `WINDOWS.md` for Windows notes, and `INSTALL` for setup.
 
-## Style
+## Testing
 
-Code follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html):
-`snake_case` functions, `kConstant` names, 2-space indent, include guards,
-and `enum class` for processing modes.
+Tested on an NVIDIA GeForce GTX 1070 Ti (Pascal, compute capability 6.1). The build targets compute capabilities 6.1, 7.5, and 8.6. GPU kernel time and host input/output time are tracked separately in an execution log, which is generated when you run the program. No benchmark results are published in this repository.
+
+## Limitations
+
+- Only two operations: a horizontal 3-tap blur and a grayscale conversion.
+- The blur leaves edge pixels unchanged.
+- No performance benchmarks or CPU comparison are included.
+- Needs an NVIDIA GPU to run.
